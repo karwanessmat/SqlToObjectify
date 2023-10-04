@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using SqlToObjectify.Exceptions;
 using System.Data.Common;
 using System.Dynamic;
 
@@ -7,7 +8,7 @@ namespace SqlToObjectify
 {
     public static class DbContextExtensions
     {
-        public static object ReadDataBySqlQuery(this DbContext context, string sqlQuery, Dictionary<string, object> parameters, bool returnList)
+        public static object ExecuteSqlQuery(this DbContext context, string sqlQuery, Dictionary<string, object>? parameters, bool returnList)
         {
             var commandParameters = ConvertToSqlParameters(parameters);
             var connection = context.Database.GetDbConnection();
@@ -16,16 +17,19 @@ namespace SqlToObjectify
             return ExecuteCommand(command, returnList);
         }
 
-        #region ReadDataBySqlQuery 
-        private static IEnumerable<SqlParameter> ConvertToSqlParameters(Dictionary<string, object> parameters)
+        #region ExecuteSqlQuery 
+        private static IEnumerable<SqlParameter> ConvertToSqlParameters(Dictionary<string, object>? parameters)
         {
-            return parameters.Select(param => new SqlParameter($"@{param.Key}", param.Value));
+            return parameters == null 
+                ? Enumerable.Empty<SqlParameter>() 
+                : parameters.Select(param => new SqlParameter($"@{param.Key}", param.Value));
         }
         private static DbCommand CreateCommand(DbConnection connection, string sqlQuery, IEnumerable<SqlParameter> parameters)
         {
             var command = connection.CreateCommand();
             command.CommandText = sqlQuery;
             command.Parameters.AddRange(parameters.ToArray());
+
             return command;
         }
 
@@ -40,7 +44,10 @@ namespace SqlToObjectify
                 var headers = GetResultHeaders(command);
                 var results = GetResults(command, headers);
 
-                return returnList ? results : results.FirstOrDefault();
+                return (returnList 
+                    ? results 
+                    : results.FirstOrDefault())!;
+
             }
             finally
             {
@@ -48,19 +55,30 @@ namespace SqlToObjectify
             }
         }
 
+
         private static List<string> GetResultHeaders(DbCommand command)
         {
             var headers = new List<string>();
-            using var reader = command.ExecuteReader();
-            for (var i = 0; i < reader.VisibleFieldCount; i++)
+            try
             {
-                headers.Add(reader.GetName(i));
+                using var reader = command.ExecuteReader();
+                for (var i = 0; i < reader.VisibleFieldCount; i++)
+                {
+                    headers.Add(reader.GetName(i));
+                }
             }
+            catch (Exception ex)
+            {
+                var exceptionType = ex.GetType().Name;
+                var exceptionMessage = ex.Message;
+                throw new SqlExecutionException("Failed to execute the SQL command and retrieve headers.", ex);
 
+            }
             return headers;
         }
 
-        private static List<ExpandoObject> GetResults(DbCommand command, IReadOnlyList<string> headers)
+
+    private static List<ExpandoObject> GetResults(DbCommand command, IReadOnlyList<string> headers)
         {
             var results = new List<ExpandoObject>();
 
