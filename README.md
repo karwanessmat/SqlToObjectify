@@ -23,7 +23,7 @@ After running SQL in EF Core and getting bad LINQ returns for complex queries, I
 ## DbContextExtensions 🛠️
 
 This static class provides the main functionality:
-### `ReadDataBySqlQuery`
+### `ExecuteSqlQuery`
 
 **Purpose**: Main method to execute a SQL query.
 
@@ -35,7 +35,7 @@ This static class provides the main functionality:
 **Returns**: Raw SQL query result.
 
 ```csharp
-public static object ReadDataBySqlQuery(this DbContext context, string sqlQuery, Dictionary<string, object>? parameters, bool returnList)
+public static object ExecuteSqlQuery(this DbContext context, string sqlQuery, Dictionary<string, object>? parameters, bool returnList)
 {
     var commandParameters = ConvertToSqlParameters(parameters);
     var connection = context.Database.GetDbConnection();
