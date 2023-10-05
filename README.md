@@ -356,6 +356,7 @@ if (allDepartmentsWithEmployeesCount != null)
 [<img align="left" alt="LinkedIn" width="22px" src="https://cdn.jsdelivr.net/npm/simple-icons@v3/icons/linkedin.svg" />][linkedin] /karwan
 
 [github]: https://github.com/karwanessmat
+
 [linkedin]: https://www.linkedin.com/in/karwan-othman
 
  
