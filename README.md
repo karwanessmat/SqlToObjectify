@@ -6,6 +6,7 @@ Hello, developers! 🖐️
 After running SQL in EF Core and getting bad LINQ returns for complex queries, I wanted a more straightforward method. Methods of handling situations and saving time: Provides case prevention. This solution lets Entity Framework Core developers convert SQL queries to strongly typed lists or objects. I hope it helps.
 
 
+
 ## Table of Contents 📜
 - [Features](#features)
 - [DbContextExtensions](#DbContextExtensions)
@@ -23,7 +24,7 @@ After running SQL in EF Core and getting bad LINQ returns for complex queries, I
 ## DbContextExtensions 🛠️
 
 This static class provides the main functionality:
-### `ExecuteSqlQuery`
+### `ReadDataBySqlQuery`
 
 **Purpose**: Main method to execute a SQL query.
 
@@ -35,7 +36,8 @@ This static class provides the main functionality:
 **Returns**: Raw SQL query result.
 
 ```csharp
-public static object ExecuteSqlQuery(this DbContext context, string sqlQuery, Dictionary<string, object>? parameters, bool returnList)
+public static object ExecuteSqlQuery(this DbContext context, string sqlQuery, Dictionary<string, object>? parameters = null, bool returnList = true)
+
 {
     var commandParameters = ConvertToSqlParameters(parameters);
     var connection = context.Database.GetDbConnection();
@@ -52,50 +54,58 @@ Converts a dictionary of parameters into SQL parameters.
 
 ```csharp
 private static IEnumerable<SqlParameter> ConvertToSqlParameters(Dictionary<string, object>? parameters)
-{
-            return parameters == null 
-                ? Enumerable.Empty<SqlParameter>() 
-                : parameters.Select(param => new SqlParameter($"@{param.Key}", param.Value));
-}
+        {
+            return parameters?.Select(param => new SqlParameter($"@{param.Key}", param.Value)) ?? Enumerable.Empty<SqlParameter>();
+        }
 ```
 
 #### `CreateCommand`
 Creates a database command with the provided SQL query and parameters.
 
 ```csharp
-private static DbCommand CreateCommand(DbConnection connection, string sqlQuery, IEnumerable<SqlParameter> parameters)
-{
-    var command = connection.CreateCommand();
-    command.CommandText = sqlQuery;
-    command.Parameters.AddRange(parameters.ToArray());
-    return command;
-}
+       private static DbCommand CreateCommand(DbConnection connection,
+        string sqlQuery, IEnumerable<SqlParameter> parameters)
+        {
+            var command = connection.CreateCommand();
+            command.CommandText = sqlQuery;
+            command.CommandType = sqlQuery.Trim().Contains(" ") 
+            ? CommandType.Text 
+            : CommandType.StoredProcedure;
+            
+            command.Parameters.AddRange(parameters.ToArray());
+            return command;
+        }
 ```
 
 #### `ExecuteCommand`
 
 Executes the command and retrieves the results.
 ```csharp
-private static object ExecuteCommand(DbCommand command, bool returnList)
-{
-    var connection = command.Connection;
+        private static object ExecuteCommand(DbCommand command, bool returnList)
+        {
+            // Using the null- operator to simplify the connection checks.
+            if (command.Connection?.State != ConnectionState.Open)
+                command?.Connection?.Open();
 
-    try
-    {
-        connection?.Open();
-
-        var headers = GetResultHeaders(command);
-        var results = GetResults(command, headers);
+            try
+            {
+                var headers = GetResultHeaders(command);
+                var results = GetResults(command, headers);
 
                 return (returnList 
-                    ? results 
-                    : results.FirstOrDefault())!;
-    }
-    finally
-    {
-        connection?.Close();
-    }
-}
+                        ? results 
+                        : results.FirstOrDefault())!;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Error executing the database command.", ex);
+            }
+            finally
+            {
+                if (command?.Connection?.State != ConnectionState.Closed)
+                    command?.Connection?.Close();
+            }
+        }
 ```
 
 #### `GetResultHeaders`
@@ -356,7 +366,6 @@ if (allDepartmentsWithEmployeesCount != null)
 [<img align="left" alt="LinkedIn" width="22px" src="https://cdn.jsdelivr.net/npm/simple-icons@v3/icons/linkedin.svg" />][linkedin] /karwan
 
 [github]: https://github.com/karwanessmat
-
 [linkedin]: https://www.linkedin.com/in/karwan-othman
 
  
