@@ -32,7 +32,7 @@ This static class provides the main functionality:
 **Parameters**:
 -   `sqlQuery`: The SQL query string.
 -   `parameters`: Dictionary of parameters to be passed to the SQL query.
--   `returnList`: Boolean flag to determine if the result should be a list or a single object.
+-   `returnList`: Boolean flag to determine if the result should be a list or a single object, by default is true.
 
 **Returns**: Raw SQL query result.
 
@@ -360,15 +360,25 @@ The utility now supports executing stored procedures with parameters. This enhan
 
 Here's an example demonstrating how to use the utility to execute a stored procedure named `GetEmployeesByDepartmentId`:
 ```csharp
+// "Stored Procedure"
+const string getEmployeesByDepartmentIdStoredProcedure= "GetEmployeesByDepartmentId";
+var spParamList = new Dictionary<string, object>
+{
+    { "departmentId", 4 }
+};
+
+
 var getEmployeesByDepartmentId = context
     .ExecuteSqlQuery(getEmployeesByDepartmentIdStoredProcedure, spParamList)
     .MapToObjectList<EmployeesByDepartmentViewModel>();
+
+
 
 Console.WriteLine("Stored Procedure");
 if (getEmployeesByDepartmentId != null)
     foreach (var department in getEmployeesByDepartmentId)
     {
-        Console.WriteLine($"Name: {department.Id}, # Name: {department.Name}");
+        Console.WriteLine($"department Id: {department.Id}, # Employee Name: {department.Name}");
     }
 ```
 
