@@ -1,6 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using SqlToObjectify.Exceptions;
+using System.Data;
 using System.Data.Common;
 using System.Dynamic;
 
@@ -8,26 +9,28 @@ namespace SqlToObjectify
 {
     public static class DbContextExtensions
     {
-        public static object ExecuteSqlQuery(this DbContext context, string sqlQuery, Dictionary<string, object>? parameters, bool returnList)
+        public static object ExecuteSqlQuery(this DbContext context, string sqlQuery, Dictionary<string, object>? parameters = null, bool returnList = true)
         {
             var commandParameters = ConvertToSqlParameters(parameters);
             var connection = context.Database.GetDbConnection();
-            using var command = CreateCommand(connection, sqlQuery, commandParameters);
 
+            using var command = CreateCommand(connection, sqlQuery, commandParameters);
             return ExecuteCommand(command, returnList);
         }
 
-        #region ExecuteSqlQuery 
         private static IEnumerable<SqlParameter> ConvertToSqlParameters(Dictionary<string, object>? parameters)
         {
-            return parameters == null 
-                ? Enumerable.Empty<SqlParameter>() 
-                : parameters.Select(param => new SqlParameter($"@{param.Key}", param.Value));
+            return parameters?.Select(param => new SqlParameter($"@{param.Key}", param.Value)) ?? Enumerable.Empty<SqlParameter>();
         }
+
         private static DbCommand CreateCommand(DbConnection connection, string sqlQuery, IEnumerable<SqlParameter> parameters)
         {
             var command = connection.CreateCommand();
             command.CommandText = sqlQuery;
+            command.CommandType = sqlQuery.Trim().Contains(" ") 
+                                            ? CommandType.Text 
+                                            : CommandType.StoredProcedure;
+
             command.Parameters.AddRange(parameters.ToArray());
 
             return command;
@@ -35,23 +38,27 @@ namespace SqlToObjectify
 
         private static object ExecuteCommand(DbCommand command, bool returnList)
         {
-            var connection = command.Connection;
+            // Using the null- operator to simplify the connection checks.
+            if (command.Connection?.State != ConnectionState.Open)
+                command.Connection?.Open();
 
             try
             {
-                connection?.Open();
-
                 var headers = GetResultHeaders(command);
                 var results = GetResults(command, headers);
 
                 return (returnList 
-                    ? results 
-                    : results.FirstOrDefault())!;
-
+                        ? results 
+                        : results.FirstOrDefault())!;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Error executing the database command.", ex);
             }
             finally
             {
-                connection?.Close();
+                if (command.Connection?.State != ConnectionState.Closed)
+                    command.Connection?.Close();
             }
         }
 
@@ -77,11 +84,9 @@ namespace SqlToObjectify
             return headers;
         }
 
-
-    private static List<ExpandoObject> GetResults(DbCommand command, IReadOnlyList<string> headers)
+        private static List<ExpandoObject> GetResults(DbCommand command, IReadOnlyList<string> headers)
         {
             var results = new List<ExpandoObject>();
-
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
@@ -91,29 +96,24 @@ namespace SqlToObjectify
                     results.Add(result);
                 }
             }
-
             return results;
         }
 
-        private static ExpandoObject? ReadRow(DbDataReader reader, IReadOnlyList<string> headers)
+        private static ExpandoObject? ReadRow(IDataRecord reader, IReadOnlyList<string> headers)
         {
             var row = new ExpandoObject() as IDictionary<string, object?>;
 
-            for (var i = 0; i < reader.VisibleFieldCount; i++)
+            for (var i = 0; i < reader.FieldCount; i++)
             {
                 var columnName = headers[i];
                 var value = reader.GetValue(i);
-
-                if (value is DBNull)
-                {
-                    return null;
-                }
-                row[columnName] = value;
+                row[columnName] = value is DBNull ? null : value;
             }
 
             return row as ExpandoObject;
         }
-        #endregion
+
+
     }
 
 }
