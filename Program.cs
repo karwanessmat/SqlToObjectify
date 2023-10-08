@@ -3,11 +3,11 @@ using SqlToObjectify.ViewModels;
 
 using var context = new SqlObjectDbContext();
 const string sqlQuery1 =
-    "SELECT d.Name AS DepartmentName, COUNT(e.Id) AS NumberOfEmployees " +
-    "FROM Departments d inner JOIN Employees e ON d.Id = e.DepartmentId " +
-    "GROUP BY d.Name " +
-    "having  COUNT(e.Id)>=@numberOfEmployees " +
-    "ORDER BY  d.Name;";
+    @"SELECT d.Name AS DepartmentName, COUNT(e.Id) AS NumberOfEmployees 
+    FROM Departments d inner JOIN Employees e ON d.Id = e.DepartmentId 
+    GROUP BY d.Name 
+    having  COUNT(e.Id)>=@numberOfEmployees 
+    ORDER BY  d.Name";
 
             var paramList1= new Dictionary<string, object>
             {
@@ -57,10 +57,10 @@ Console.WriteLine();
 
 // without parameters
 const string sqlQuery3=
-    "SELECT d.Name AS DepartmentName, COUNT(e.Id) AS NumberOfEmployees " +
-    "FROM Departments d inner JOIN Employees e ON d.Id = e.DepartmentId " +
-    "GROUP BY d.Name " +
-    "ORDER BY  d.Name;";
+    @"SELECT d.Name AS DepartmentName, COUNT(e.Id) AS NumberOfEmployees 
+    FROM Departments d inner JOIN Employees e ON d.Id = e.DepartmentId 
+    GROUP BY d.Name 
+    ORDER BY  d.Name;";
 
 
 
@@ -85,6 +85,9 @@ var spParamList = new Dictionary<string, object>
 };
 
 
+
+
+// "Stored Procedure"
 var getEmployeesByDepartmentId = context
     .ExecuteSqlQuery(getEmployeesByDepartmentIdStoredProcedure, spParamList)
     .MapToObjectList<EmployeesByDepartmentViewModel>();
