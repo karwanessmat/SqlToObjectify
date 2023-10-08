@@ -77,7 +77,11 @@ if (allDepartmentsWithEmployeesCount != null)
     }
 Console.WriteLine("*******************************");
 
-// without parameters
+
+
+
+
+// "Stored Procedure"
 const string getEmployeesByDepartmentIdStoredProcedure= "GetEmployeesByDepartmentId";
 var spParamList = new Dictionary<string, object>
 {
@@ -85,9 +89,6 @@ var spParamList = new Dictionary<string, object>
 };
 
 
-
-
-// "Stored Procedure"
 var getEmployeesByDepartmentId = context
     .ExecuteSqlQuery(getEmployeesByDepartmentIdStoredProcedure, spParamList)
     .MapToObjectList<EmployeesByDepartmentViewModel>();
@@ -98,7 +99,7 @@ Console.WriteLine("Stored Procedure");
 if (getEmployeesByDepartmentId != null)
     foreach (var department in getEmployeesByDepartmentId)
     {
-        Console.WriteLine($"Name: {department.Id}, # Name: {department.Name}");
+        Console.WriteLine($"department Id: {department.Id}, # Employee Name: {department.Name}");
     }
 Console.WriteLine("*******************************");
 Console.ReadKey();
