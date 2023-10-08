@@ -1,4 +1,5 @@
 
+
 # EF Core SQL to Object Utility
 
 Hello, developers! 🖐️ 
@@ -286,11 +287,11 @@ This example demonstrates how to use the utility to execute a SQL query that ret
 ```csharp
 using var context = new SqlObjectDbContext();
 const string sqlQuery1 =
-    "SELECT d.Name AS DepartmentName, COUNT(e.Id) AS NumberOfEmployees " +
-    "FROM Departments d inner JOIN Employees e ON d.Id = e.DepartmentId " +
-    "GROUP BY d.Name " +
-    "having  COUNT(e.Id)>=@numberOfEmployees " +
-    "ORDER BY  d.Name;";
+    @"SELECT d.Name AS DepartmentName, COUNT(e.Id) AS NumberOfEmployees 
+    FROM Departments d inner JOIN Employees e ON d.Id = e.DepartmentId 
+    GROUP BY d.Name 
+    having  COUNT(e.Id)>=@numberOfEmployees 
+    ORDER BY  d.Name";
 
 var paramList1= new Dictionary<string, object>
 {
@@ -298,7 +299,7 @@ var paramList1= new Dictionary<string, object>
 };
 
 var departmentsWithEmployeesCount = context
-    .ReadDataBySqlQuery(sqlQuery1, paramList1, true)
+    .ExecuteSqlQuery(sqlQuery1, paramList1)
     .MapToObjectList<DepartmentEmployeeCountViewModel>();
 
 if (departmentsWithEmployeesCount != null)
@@ -341,16 +342,33 @@ const string sqlQuery3=
     "SELECT d.Name AS DepartmentName, COUNT(e.Id) AS NumberOfEmployees " +
     "FROM Departments d inner JOIN Employees e ON d.Id = e.DepartmentId " +
     "GROUP BY d.Name " +
-    "ORDER BY  d.Name;";
+    "ORDER BY  d.Name";
 
 var allDepartmentsWithEmployeesCount = context
-    .ExecuteSqlQuery(sqlQuery3, null, true)
+    .ExecuteSqlQuery(sqlQuery3)
     .MapToObjectList<DepartmentEmployeeCountViewModel>();
 
 if (allDepartmentsWithEmployeesCount != null)
     foreach (var department in allDepartmentsWithEmployeesCount)
     {
         Console.WriteLine($"Name: {department.DepartmentName}, # Employees: {department.NumberOfEmployees}");
+    }
+```
+
+### 4. Executing Stored Procedures with Parameters
+The utility now supports executing stored procedures with parameters. This enhancement allows for more dynamic interactions with your database routines.
+
+Here's an example demonstrating how to use the utility to execute a stored procedure named `GetEmployeesByDepartmentId`:
+```csharp
+var getEmployeesByDepartmentId = context
+    .ExecuteSqlQuery(getEmployeesByDepartmentIdStoredProcedure, spParamList)
+    .MapToObjectList<EmployeesByDepartmentViewModel>();
+
+Console.WriteLine("Stored Procedure");
+if (getEmployeesByDepartmentId != null)
+    foreach (var department in getEmployeesByDepartmentId)
+    {
+        Console.WriteLine($"Name: {department.Id}, # Name: {department.Name}");
     }
 ```
 
