@@ -90,7 +90,7 @@ await context.ExecuteStoredProcedureAsync(sp_name, paramList);
 ```
 
 
-## Example: Fetching Books by Genre and Price Limit
+## Example: Fetching Books by Tag and Price Limit
 ### Scenario
 You want to retrieve a list of books that belong to a specific tag, say "Computer Science", and are priced under $20. This example shows how to execute this query using `SelectSqlQueryListAsync<T>` and map the results to a list of `BookViewModel`.
 
