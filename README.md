@@ -1,6 +1,7 @@
 
 
 
+
 # EF Core SQL to Object Utility
 
 Hello 🖐️ 
@@ -10,7 +11,7 @@ Welcome to the EF Core SQL to Object Mapping Utility, a powerful tool designed t
 
 ## Features 🌟
 
-- **Asynchronous Query Execution**: Perform non-blocking SQL query and stored procedure executions directly from your `DbContext`.
+- **Asynchronous Query Execution**: Perform SQL query and stored procedure executions directly from your `DbContext`.
 - **Dynamic Parameterization**: Securely pass parameters to your queries and stored procedures to prevent SQL injection attacks.
 -   **Automatic Result Mapping**: Easily map dynamic query results to strongly-typed objects or lists, leveraging the full capabilities of C# and .NET.
 
@@ -23,6 +24,7 @@ Incorporate the `DbContextExtensions` and `ObjectMapper` into your project to st
 1.  **`DbContextExtensions`**: Provides methods for executing SQL commands, including queries and stored procedures, with support for asynchronous operations.
 2.  **`ObjectMapper`**: Facilitates the conversion of dynamic results into strongly-typed entities using reflection.
 
+ 
 ### Quick Notes
 
 -   **Parameter Matching**: Ensure dictionary keys for parameters match SQL query placeholders (without the `@` prefix).
@@ -44,8 +46,7 @@ Here's how you can leverage our utility in your projects:
 #### 1. `SelectSqlQueryListAsync<T>`: Executes a SQL query asynchronously and maps the results to a list of strongly-typed objects. It's useful for queries expected to return multiple rows.
 
 ```csharp
-var result= await context
-				.SelectSqlQueryListAsync<ViewModel>(query, paramList);
+var result= await context.SelectSqlQueryListAsync<ViewModel>(query, paramList);
 
 
 ```
@@ -53,8 +54,7 @@ var result= await context
 #### 2.**`SelectSqlQueryFirstOrDefaultAsync<T>`**: Asynchronously executes a SQL query and maps the first result to a strongly-typed object. Ideal for queries where only a single result is expected.
 
 ```csharp
-var result= await context
-				.SelectSqlQueryFirstOrDefaultAsync<ViewModel>(query, paramList);
+var result= await context.SelectSqlQueryFirstOrDefaultAsync<ViewModel>(query, paramList);
 
 
 ```
@@ -62,7 +62,7 @@ var result= await context
 #### 3.**`ExecuteSqlQueryCommandAsync`**: Executes a SQL command (e.g., update, delete) asynchronously without returning any results. Useful for data manipulation operations.
 
 ```csharp
-await context.ExecuteSqlQueryCommandAsync(updateEmployeeFromExecuteQuery, updateParamList);
+await context.ExecuteSqlQueryCommandAsync(query, updateParamList);
 
 
 ```
@@ -71,17 +71,14 @@ await context.ExecuteSqlQueryCommandAsync(updateEmployeeFromExecuteQuery, update
 #### 4.**`SelectStoredProcedureListAsync<T>`**: Executes a stored procedure asynchronously, returning the results as a list of strongly-typed objects. Suitable for stored procedures expected to return multiple rows.
 
 ```csharp
-var result= await context
-				.SelectStoredProcedureListAsync<ViewModel>(sp_name, paramList);
+var result= await context.SelectStoredProcedureListAsync<ViewModel>(sp_name, paramList);
 
 ```
 
 #### 5.**`SelectStoredProcedureFirstOrDefaultAsync<T>`**: Executes a stored procedure and maps the first result to a strongly-typed object. Used when a stored procedure is expected to return a single row.
 
 ```csharp
-var result= await context
-					.SelectStoredProcedureFirstOrDefaultAsync<ViewModel>
-					(sp_name, paramList);
+var result= await context.SelectStoredProcedureFirstOrDefaultAsync<ViewModel>(sp_name, paramList);
 
 
 ```
@@ -93,6 +90,37 @@ await context.ExecuteStoredProcedureAsync(sp_name, paramList);
 ```
 
 
+## Example: Fetching Books by Genre and Price Limit
+### Scenario
+You want to retrieve a list of books that belong to a specific tag, say "Computer Science", and are priced under $20. This example shows how to execute this query using `SelectSqlQueryListAsync<T>` and map the results to a list of `BookViewModel`.
+
+```csharp
+const string sqlQuery = @" SELECT Title, Author, Price 
+							FROM Books 
+							WHERE Tag= @tag AND Price < @priceLimit";
+					
+// Define parameters for the tag and price limit  
+var parameters = new Dictionary<string, object> 
+{ 
+	{"tag", "Computer Science"}, 
+	{"priceLimit", 20}
+};
+
+
+// Execute the query and map the results
+var affordableComputerScienceBooks = await dbContext.SelectSqlQueryListAsync<BookViewModel>(
+    sqlQuery, parameters);
+```
+
+### Key Points to Remember
+
+-   **Parameter Alignment**: Make sure the keys in your parameters dictionary match the placeholders in your SQL query exactly. For example, `"tag"` corresponds to `@tag` in the SQL query.
+    
+-   **Preventing SQL Injection**: Using parameterized queries, as shown, helps prevent SQL injection by ensuring that user input or variable values cannot be used to alter the query's structure maliciously.
+    
+-   **Testing Your Queries**: Always test your queries with various input values to ensure they return the expected results. This is crucial for maintaining data integrity and application reliability.
+    
+-   **Simplicity and Clarity**: When writing SQL queries, aim for simplicity and clarity. Ensure that your queries are easy to read and understand, which aids in maintenance and debugging.
 
 ## Contributions and Feedback
 

@@ -17,8 +17,17 @@ const string selectSqlQueryListAsync =
                 { "numberOfEmployees", 0 }
             };
 
+
 var departmentsWithEmployeesCount = await context
     .SelectSqlQueryListAsync<DepartmentEmployeeCountViewModel>(selectSqlQueryListAsync, paramList1);
+
+
+foreach (var department in departmentsWithEmployeesCount)
+{
+    Console.WriteLine($"Name: {department.DepartmentName}, # Employees: {department.NumberOfEmployee}");
+}
+Console.WriteLine("*******************************");
+Console.WriteLine();
 
 
 
@@ -57,6 +66,12 @@ var allDepartmentsWithEmployeesCount =await context
     .SelectSqlQueryListAsync<DepartmentEmployeeCountViewModel>(parameterLessSelectSqlQueryListAsync);
 
 
+foreach (var department in allDepartmentsWithEmployeesCount)
+{
+    Console.WriteLine($"Name: {department.DepartmentName}, # Employees: {department.NumberOfEmployee}");
+}
+Console.WriteLine("*******************************");
+Console.WriteLine();
 
 
 // without parameters
@@ -72,16 +87,21 @@ const string parameterLessSelectSqlQueryAsync =
 var top1departmentsWithEmployeesCount = await context
     .SelectSqlQueryFirstOrDefaultAsync<DepartmentEmployeeCountViewModel>(parameterLessSelectSqlQueryAsync);
 
+Console.WriteLine($"First department name: {top1departmentsWithEmployeesCount.DepartmentName}");
+
+Console.WriteLine("*******************************");
+Console.WriteLine();
 
 
 
 
-var updateEmployeeFromExecuteQuery = "update Employees set Name = @EmployeeName  where id = @employeeId";
+
+
+var updateEmployeeFromExecuteQuery = "update Employees set Name =Name +' - update' where id = @employeeId";
 
 var updateParamList = new Dictionary<string, object>
 {
-    { "employeeId", 1 },
-    { "EmployeeName", "your suggestion name" }
+    { "employeeId", 1 }
 };
 
 
@@ -89,7 +109,13 @@ var updateParamList = new Dictionary<string, object>
  await context
     .ExecuteSqlQueryCommandAsync(updateEmployeeFromExecuteQuery, updateParamList);
 
+Console.WriteLine($"First department name: {top1departmentsWithEmployeesCount.DepartmentName}");
 
+Console.WriteLine("*******************************");
+Console.WriteLine();
+
+
+return;
 
 
 // "Stored Procedure"
@@ -105,20 +131,12 @@ var getEmployeesByDepartmentId = await context
 
 
 
-
-
-
-const string getEmployeeById_query= "GetEmployeeById";
-var sp_param_List = new Dictionary<string, object>
+Console.WriteLine("Stored Procedure");
+foreach (var department in getEmployeesByDepartmentId)
 {
-    { "employeeId", 1 }
-};
-
-
-var getEmployeeByIdStoredProcedure = await context
-    .SelectStoredProcedureListAsync<EmployeesByDepartmentViewModel>(getEmployeeById_query, spParamList);
-
-
+    Console.WriteLine($"department Id: {department.Id}, # Employee Name: {department.Name}");
+}
+Console.WriteLine("*******************************");
 
 
 // "Stored Procedure"
@@ -132,6 +150,10 @@ var spUpdateParamList = new Dictionary<string, object>
 
 await context
     .ExecuteStoredProcedureAsync(updateEmployeeNameStoredProcedure, spUpdateParamList);
+
+Console.WriteLine("*******************************");
+Console.ReadKey();
+
 
 
 
