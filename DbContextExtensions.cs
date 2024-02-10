@@ -68,7 +68,7 @@ namespace SqlToObjectify
         /// <param name="parameters"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public static async Task ExecuteSqlCommandAsync(
+        public static async Task ExecuteSqlQueryCommandAsync(
             this DbContext context,
             string sqlQuery,
             Dictionary<string, object>? parameters = null,
