@@ -96,8 +96,8 @@ You want to retrieve a list of books that belong to a specific tag, say "Compute
 
 ```csharp
 const string sqlQuery = @" SELECT Title, Author, Price 
-							FROM Books 
-							WHERE Tag= @tag AND Price < @priceLimit";
+			   FROM Books 
+			   WHERE Tag= @tag AND Price < @priceLimit";
 					
 // Define parameters for the tag and price limit  
 var parameters = new Dictionary<string, object> 
