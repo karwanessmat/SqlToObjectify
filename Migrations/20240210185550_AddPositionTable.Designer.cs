@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SqlToObjectify;
 
@@ -10,9 +11,11 @@ using SqlToObjectify;
 namespace SqlToObjectify.Migrations
 {
     [DbContext(typeof(SqlObjectDbContext))]
-    partial class SqlObjectDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240210185550_AddPositionTable")]
+    partial class AddPositionTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

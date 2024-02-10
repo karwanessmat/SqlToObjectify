@@ -5,7 +5,7 @@ namespace SqlToObjectify
 {
     public static class ObjectMapper
     {
-        public static T? MapToObject<T>(this object? result) where T : class, new()
+        public static T? MapToObject<T>(this object? result) 
         {
             if (result is not ExpandoObject obj)
             {
@@ -35,7 +35,6 @@ namespace SqlToObjectify
                 SetProperties(listObj, type, listItem);
                 modelList.Add(listItem);
             }
-
             return modelList;
         }
 
