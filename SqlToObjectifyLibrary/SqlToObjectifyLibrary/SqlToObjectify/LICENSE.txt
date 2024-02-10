@@ -1,0 +1,43 @@
+﻿MIT License
+
+Copyright (c) 2023 Karwan Othman
+
+EF Core SQL to Object Utility License
+Preamble
+This license governs the use, modification, distribution, and contribution to the EF Core SQL to Object Utility ("Software"), adhering to the best practices recommended by Microsoft for NuGet package authors and the broader open-source community. This document is designed to encourage quality, collaboration, and the responsible use of the Software.
+
+Grant of Rights
+1. Usage and Distribution
+DO include a clear and concise description of the Software in all distributions, emphasizing its purpose and functionality as described in the README.md document.
+
+DO NOT use the LicenseUrl metadata property. Instead, this license text shall be included in all copies or substantial portions of the Software, ensuring clarity and permanence of licensing terms.
+
+2. Modification and Contribution
+CONSIDER contributing improvements or modifications back to the source repository. While not mandatory, contributions are encouraged to enhance the Software's quality and utility. All contributions are subject to approval and integration by the project maintainers.
+
+AVOID modifying or extending the Software in ways that compromise security, compatibility, or the ability to upgrade to future versions.
+
+3. Redistribution
+DO distribute modified versions of the Software under the same terms as this license, ensuring that all recipients have the same rights and obligations as outlined herein.
+
+CONSIDER using Semantic Versioning (SemVer) for any modified versions of the Software to maintain consistency and predictability in version management.
+
+Intellectual Property
+The Software and its original content, features, and functionality are and will remain the exclusive property of the original authors and its contributors.
+
+DO respect the intellectual property rights of the Software and its contributors. Use of the Software does not grant any ownership rights to the Software itself.
+
+Disclaimer of Warranty and Limitation of Liability
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Open Source Licensing
+DO choose an open-source license for any open-source components included in the Software. This license serves as the primary license for the Software, but open-source components may be covered under their respective licenses.
+
+CONSIDER including a license expression in your package metadata to clearly communicate the open-source licensing terms of the Software and its components.
+
+Final Provisions
+This license and the rights granted hereunder will terminate automatically if you fail to comply with terms herein and fail to cure such breach within 30 days of becoming aware of the breach. All sublicenses to the Software that are properly granted shall survive any termination of this license.
+Acknowledgements
+This license incorporates and respects the guidelines provided by Microsoft for package authors, aiming to promote high-quality software development practices within the .NET ecosystem.

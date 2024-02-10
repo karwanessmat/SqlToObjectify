@@ -1,18 +1,18 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using SqlToObjectify.Exceptions;
 using System.Data;
 using System.Data.Common;
 using System.Dynamic;
+using SqlToObjectify.Exceptions;
 
 namespace SqlToObjectify
 {
     public static class DbContextExtensions
     {
         public static object ExecuteSqlQuery(
-                                    this DbContext context, 
-                                    string sqlQuery, 
-                                    Dictionary<string, object>? parameters = null, 
+                                    this DbContext context,
+                                    string sqlQuery,
+                                    Dictionary<string, object>? parameters = null,
                                     bool returnList = true)
         {
             var commandParameters = ConvertToSqlParameters(parameters);
@@ -25,7 +25,7 @@ namespace SqlToObjectify
         private static IEnumerable<SqlParameter> ConvertToSqlParameters(Dictionary<string, object>? parameters)
         {
             return parameters?
-                .Select(param => new SqlParameter($"@{param.Key}", param.Value)) 
+                .Select(param => new SqlParameter($"@{param.Key}", param.Value))
                    ?? Enumerable.Empty<SqlParameter>();
         }
 
@@ -33,8 +33,8 @@ namespace SqlToObjectify
         {
             var command = connection.CreateCommand();
             command.CommandText = sqlQuery;
-            command.CommandType = sqlQuery.Trim().Contains(" ") 
-                                            ? CommandType.Text 
+            command.CommandType = sqlQuery.Trim().Contains(" ")
+                                            ? CommandType.Text
                                             : CommandType.StoredProcedure;
 
             command.Parameters.AddRange(parameters.ToArray());
@@ -53,8 +53,8 @@ namespace SqlToObjectify
                 var headers = GetResultHeaders(command);
                 var results = GetResults(command, headers);
 
-                return (returnList 
-                        ? results 
+                return (returnList
+                        ? results
                         : results.FirstOrDefault())!;
             }
             catch (Exception ex)
@@ -123,3 +123,4 @@ namespace SqlToObjectify
     }
 
 }
+

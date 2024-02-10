@@ -2,6 +2,8 @@
 using SqlToObjectify.ViewModels;
 
 using var context = new SqlObjectDbContext();
+
+
 const string sqlQuery1 =
     @"SELECT d.Name AS DepartmentName, COUNT(e.Id) AS NumberOfEmployees 
     FROM Departments d inner JOIN Employees e ON d.Id = e.DepartmentId 
@@ -28,6 +30,30 @@ if (departmentsWithEmployeesCount != null)
 Console.WriteLine("*******************************");
 Console.WriteLine();
 
+
+
+
+
+const string sqlQuery1_1 = """
+                           SELECT d.Name AS DepartmentName 
+                           FROM Departments as d
+                           ORDER BY  d.Name
+                           """;
+
+
+
+var departmentNamesEmployee= context
+    .ExecuteSqlQuery(sqlQuery1_1,null,true)
+    .MapToObjectList<DepartmentNamesEmployeeViewModel>();
+
+
+if (departmentNamesEmployee != null)
+    foreach (var department in departmentNamesEmployee)
+    {
+        Console.WriteLine($"Name: {department.DepartmentName}");
+    }
+Console.WriteLine("*******************************");
+Console.WriteLine();
 
 
 
@@ -102,5 +128,25 @@ if (getEmployeesByDepartmentId != null)
         Console.WriteLine($"department Id: {department.Id}, # Employee Name: {department.Name}");
     }
 Console.WriteLine("*******************************");
+
+
+// "Stored Procedure"
+const string updateEmployeeNameStoredProcedure = "updateEmployeeName";
+var spUpdateParamList = new Dictionary<string, object>
+{
+    { "employeeId", 4 },
+    { "name", "update name" }
+};
+
+
+var updateEmployeeName = context
+    .ExecuteSqlQuery(updateEmployeeNameStoredProcedure, spUpdateParamList);
+
+Console.WriteLine("*******************************");
 Console.ReadKey();
+
+
+
+
+
 
