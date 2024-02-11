@@ -10,3 +10,7 @@ using SqlToObjectify.ViewModels;
 
 //var sqlObjectDbContextHelper = new SqlObjectDbContextHelper();
 //await sqlObjectDbContextHelper.SelectSqlQueryListAsync();
+
+
+var sqlObjectDbContextHelper = new SqlObjectDbContextHelper();
+await sqlObjectDbContextHelper.SelectStoredProcedureListAsync();

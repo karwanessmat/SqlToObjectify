@@ -75,14 +75,25 @@ namespace SqlToObjectify
             Console.WriteLine();
         }
 
-        private async Task SelectStoredProcedureListAsync()
+        public async Task SelectStoredProcedureListAsync()
         {
+            // 
+            var sp = """
+                     alter procedure SelectAllDepartment
+                     @searchQuery nvarchar(max)
+                     as
+                     begin
+                     	select  *
+                     	from  Departments as d
+                     	where d.Name like '%'+@searchQuery+'%'
+                     end
+                     """;
 
             // "Stored Procedure"
-            const string getEmployeesByDepartmentIdStoredProcedure = "GetEmployeesByDepartmentId";
+            const string getEmployeesByDepartmentIdStoredProcedure = "SelectAllDepartment";
             var spParamList = new Dictionary<string, object>
             {
-                { "departmentId", 4 }
+                { "searchQuery", "department5" }
             };
 
 

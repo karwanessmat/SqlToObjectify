@@ -35,12 +35,10 @@ namespace SqlToObjectify
                        """;
             var result = await dbContext.Database.SqlQueryRaw<OutboxMessageResponse>(sql).AsNoTracking().ToListAsync();
 
-            var outboxMessages = await dbContext
-                .SelectSqlQueryListAsync<OutboxMessageResponse>(sql);
 
 
         
-            return outboxMessages!;
+            return result!;
 
 
         }
