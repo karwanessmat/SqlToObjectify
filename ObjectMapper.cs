@@ -1,5 +1,6 @@
 ﻿using System.Dynamic;
 using System.Reflection;
+using Microsoft.EntityFrameworkCore.Query.Internal;
 
 namespace SqlToObjectify
 {
@@ -37,6 +38,9 @@ namespace SqlToObjectify
             }
             return modelList;
         }
+
+
+
 
         private static void SetProperties<T>(ExpandoObject obj, IReflect type, T model)
         {
