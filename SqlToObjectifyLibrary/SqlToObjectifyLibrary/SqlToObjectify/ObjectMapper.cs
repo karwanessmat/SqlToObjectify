@@ -37,18 +37,54 @@ namespace SqlToObjectify
             }
             return modelList;
         }
-
+       
         private static void SetProperties<T>(ExpandoObject obj, IReflect type, T model)
         {
             foreach (var (key, value) in obj)
             {
-                var property = type.GetProperty(key,
-                    BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                var property = type.GetProperty(key, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
                 if (property == null) continue;
 
-                property.SetValue(model, Convert.ChangeType(value, property.PropertyType));
+                var propertyType = property.PropertyType;
+
+                if (value == null || value is DBNull)
+                {
+                    if (!propertyType.IsValueType || Nullable.GetUnderlyingType(propertyType) != null)
+                    {
+                        property.SetValue(model, null);
+                    }
+                    else
+                    {
+                        continue; // skip non-nullable types
+                    }
+                }
+                else
+                {
+                    var targetType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+
+                    try
+                    {
+                        // Handle enums (both string and int representation)
+                        if (targetType.IsEnum)
+                        {
+                            if (value is string s)
+                                property.SetValue(model, Enum.Parse(targetType, s, ignoreCase: true));
+                            else
+                                property.SetValue(model, Enum.ToObject(targetType, value));
+                        }
+                        else
+                        {
+                            property.SetValue(model, Convert.ChangeType(value, targetType));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidOperationException($"Failed to set property '{property.Name}' with value '{value}'", ex);
+                    }
+                }
             }
         }
+
     }
 
 }

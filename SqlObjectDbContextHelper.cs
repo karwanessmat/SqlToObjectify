@@ -10,10 +10,10 @@ namespace SqlToObjectify
 
             const string selectSqlQueryListAsync =
              @"SELECT d.Name AS DepartmentName, COUNT(e.Id) AS NumberOfEmployee 
-            FROM Departments d inner JOIN Employees e ON d.Id = e.DepartmentId 
-            GROUP BY d.Name 
-            having  COUNT(e.Id)>=@numberOfEmployees 
-            ORDER BY  d.Name";
+               FROM Departments d inner JOIN Employees e ON d.Id = e.DepartmentId 
+               GROUP BY d.Name 
+               having  COUNT(e.Id)>=@numberOfEmployees 
+               ORDER BY  d.Name";
 
             var paramList1 = new Dictionary<string, object>
             {
@@ -79,7 +79,7 @@ namespace SqlToObjectify
         {
             // 
             var sp = """
-                     alter procedure SelectAllDepartment
+                     create or alter procedure SelectAllDepartment
                      @searchQuery nvarchar(max)
                      as
                      begin
@@ -89,12 +89,17 @@ namespace SqlToObjectify
                      end
                      """;
 
-            // "Stored Procedure"
-            const string getEmployeesByDepartmentIdStoredProcedure = "SelectAllDepartment";
+            await dbContext
+                .ExecuteSqlQueryCommandAsync(sp);
+
             var spParamList = new Dictionary<string, object>
             {
                 { "searchQuery", "department5" }
             };
+
+            // "Stored Procedure"
+            const string getEmployeesByDepartmentIdStoredProcedure = "SelectAllDepartment";
+
 
 
             var result = await dbContext
@@ -109,6 +114,106 @@ namespace SqlToObjectify
             }
             Console.WriteLine("*******************************");
         }
+
+
+
+        public async Task sp_Sparda_SelectStoredProcedureListAsync()
+        {
+            // 
+
+            const string spName = "sp_GetProjectTimelinePaged";
+
+            var sqlParams = new Dictionary<string, object>
+            {
+                ["ProjectId"] = Guid.Parse("62A33028-4B0C-4460-8729-4BDEF131864C"),
+                ["PageNumber"] = 0,
+                ["PageSize"] = 100
+            };
+
+            // 1️⃣ call the SP – every row already unique to a timeline item
+            var result = await dbContext
+                .SelectStoredProcedureListAsync<ProjectTimelinePagedRaw>(spName, sqlParams);
+
+
+
+            foreach (var response in result)
+            {
+                Console.WriteLine($"{response.ProjectId} - {response.CreatedDate}");
+            }
+            Console.WriteLine("Stored Procedure");
+        }
+
+
+
+
+        public async Task sp_GetAllProjectRecordsListAsync()
+        {
+            // 
+
+            var spParamList = new Dictionary<string, object>
+            {
+                { "Title", "18" }
+            };
+
+
+
+            // "Stored Procedure"
+            const string getEmployeesByDepartmentIdStoredProcedure = "GetAllProjectRecords";
+
+            var result = await dbContext
+                .SelectStoredProcedureListAsync<ProjectRecordViewModel>(getEmployeesByDepartmentIdStoredProcedure, spParamList);
+
+            Console.WriteLine("Stored Procedure");
+            foreach (var record in result)
+            {
+                Console.WriteLine($"Project: {record.ProjectId}, Title: {record.Title}, Type: {record.RecordType}, Created: {record.CreatedDate}");
+            }
+            Console.WriteLine("*******************************");
+        }
+
+        
+        public async Task SelectSqlQuery_GetAllProjectRecordsListAsync()
+        {
+
+            const string selectSqlQueryListAsync = """
+                                                   SELECT
+                                                       ProjectId,
+                                                       TypeId,
+                                                       RecordType,
+                                                       Title,
+                                                       Text,
+                                                       CreatedDate,
+                                                       TaskStatus,
+                                                       TaskPriority,
+                                                       ActivityCategory,
+                                                       MilestoneName,
+                                                       TransactionAmount,
+                                                       CurrencySymbol,
+                                                       TransactionType,
+                                                       FileList
+                                                   FROM ProjectRecords
+                                                   where  ProjectId = @ProjectId
+                                                   """;
+
+            var spParamList = new Dictionary<string, object>
+            {
+                { "ProjectId", Guid.Parse("9803DDD2-6B59-4C6F-A033-207C71BF086A") }
+            };
+
+            var result = await dbContext
+                .SelectSqlQueryListAsync<ProjectRecordViewModel>(selectSqlQueryListAsync, spParamList);
+
+
+            foreach (var record in result)
+            {
+                Console.WriteLine($"Project: {record.ProjectId}, Title: {record.Title}, Type: {record.RecordType}, Created: {record.CreatedDate}");
+            }
+            Console.WriteLine("*******************************");
+            Console.WriteLine();
+        }
+
+
+
 
         private async Task SelectStoredProcedureFirstOrDefaultAsync()
         {
@@ -125,6 +230,9 @@ namespace SqlToObjectify
 
             Console.WriteLine("*******************************");
         }
+
+
+
 
         private async Task ExecuteStoredProcedureAsync()
         {
