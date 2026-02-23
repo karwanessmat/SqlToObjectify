@@ -23,7 +23,7 @@ public class SqlObjectDbContext:DbContext
     {
 
         //const string connectionStrings = "Server=.;Database=SqlObjectDb;Integrated Security=True;Encrypt=False;";
-        const string connectionStrings = "Server=.;Database=spardaworkspace.com;Integrated Security=True;Encrypt=False;";
+        const string connectionStrings = "Server=.;Database=SqlObjectDb;Integrated Security=True;Encrypt=False;";
 
         optionsBuilder.UseSqlServer(connectionStrings);
         base.OnConfiguring(optionsBuilder);

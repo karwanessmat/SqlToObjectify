@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net9.0</TargetFramework>
+		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<ApplicationIcon>logo.ico</ApplicationIcon>
@@ -12,15 +12,15 @@
 		<RepositoryUrl>https://github.com/karwanessmat/SqlToObjectify</RepositoryUrl>
 		<PackageTags>c#, efcore, sql, rawsql, dapper, mapping</PackageTags>
 		<Title>sql to object</Title>
-		<Version>2.1</Version>
-		<AssemblyVersion>2.1</AssemblyVersion>
-		<FileVersion>2.1</FileVersion>
+		<Version>10.0.1-local.5</Version>
+		<AssemblyVersion>10.0.1</AssemblyVersion>
+		<FileVersion>10.0.1</FileVersion>
 
 		<!-- ✅ Added -->
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Authors>Karwan Essmat</Authors>
 		<Copyright>© 2025 Karwan Essmat</Copyright>
-		<PackageReleaseNotes>Added .NET 9.0 support, improved mapping performance, and bug fixes.</PackageReleaseNotes>
+		<PackageReleaseNotes>Improved mapping performance (faster string reads) and bug fixes.</PackageReleaseNotes>
 	</PropertyGroup>
 
 
@@ -41,14 +41,14 @@
 
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.6" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.6">
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.3" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.3">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.6" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.6" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.6">
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.3" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.3" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.3">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
