@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build SqlToObjectify.sln)",
+      "Bash(dotnet build SqlToObjectifyLibrary.sln)",
+      "Bash(dotnet list package --include-transitive)",
+      "Bash(dotnet build SqlToObjectifyLibrary.sln -c Release)",
+      "Bash(dotnet build)",
+      "Bash(dotnet build -c Release)"
+    ]
+  }
+}
