@@ -1,146 +1,144 @@
-﻿
+# SqlToObjectify
 
+Execute raw SQL queries or stored procedures directly from your `DbContext` and map results to strongly-typed objects — **faster and lighter than Dapper**.
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://choosealicense.com/licenses/mit/)
 
-# EF Core SQL to Object Utility
+## Install
 
-Hello 🖐️ 
-
-Welcome to the EF Core SQL to Object Mapping Utility, a powerful tool designed to simplify the execution of raw SQL queries and the mapping of their results to strongly-typed .NET objects within an Entity Framework Core (EF Core) context. This utility enhances developer productivity by bridging the gap between the flexibility of SQL and the type safety of .NET, making data access more efficient and secure..
-
-
-## Features 🌟
-
-- **Asynchronous Query Execution**: Perform SQL query and stored procedure executions directly from your `DbContext`.
-- **Dynamic Parameterization**: Securely pass parameters to your queries and stored procedures to prevent SQL injection attacks.
--   **Automatic Result Mapping**: Easily map dynamic query results to strongly-typed objects or lists, leveraging the full capabilities of C# and .NET.
-
-
-
-## Getting Started
-
-Incorporate the `DbContextExtensions` and `ObjectMapper` into your project to start enhancing your EF Core operations. These components are crucial for extending your `DbContext` with powerful functionalities:
-
-1.  **`DbContextExtensions`**: Provides methods for executing SQL commands, including queries and stored procedures, with support for asynchronous operations.
-2.  **`ObjectMapper`**: Facilitates the conversion of dynamic results into strongly-typed entities using reflection.
-
- 
-### Quick Notes
-
--   **Parameter Matching**: Ensure dictionary keys for parameters match SQL query placeholders (without the `@` prefix).
--   **Testing Queries**: Always test SQL queries in a controlled environment before integration.
--   **SQL Syntax Awareness**: Pay attention to SQL syntax, including spaces and special characters, to avoid unexpected behavior.
-
-**Parameters**:
--   `sqlQuery`: The SQL query string.
--   `parameters`: a dictionary of parameters to be passed to the SQL query.
-
-
-
-
-### Example Implementations
-
-Here's how you can leverage our utility in your projects:
-
-
-#### 1. `SelectSqlQueryListAsync<T>`: Executes a SQL query asynchronously and maps the results to a list of strongly-typed objects. It's useful for queries expected to return multiple rows.
-
-```csharp
-var result= await context.SelectSqlQueryListAsync<ViewModel>(query, paramList);
-
-
+```bash
+dotnet add package SqlToObjectify
 ```
 
-#### 2.**`SelectSqlQueryFirstOrDefaultAsync<T>`**: Asynchronously executes a SQL query and maps the first result to a strongly-typed object. Ideal for queries where only a single result is expected.
+## Why SqlToObjectify?
+
+- **Zero reflection on the hot path** — expression-tree-compiled row factories, built once, reused forever
+- **Command + parameter caching** — repeated calls reuse the same `DbCommand`; only `.Value` is updated
+- **Typed `SqlParameter` fast-path** — no boxing for `int`, `string`, `Guid`, `DateTime`, etc.
+- **Adaptive `List<T>` pre-sizing** — capacity hint from the previous call eliminates mid-iteration reallocations
+- **Dual reader optimization** — `SqlDataReader`-specific compiled factory when running on SQL Server
+- **Streaming support** — `IAsyncEnumerable<T>` for large result sets without buffering
+- **Pre-compiled queries** — `CompiledSqlQuery<T>` for maximum throughput on hot queries
+
+## Quick Start
 
 ```csharp
-var result= await context.SelectSqlQueryFirstOrDefaultAsync<ViewModel>(query, paramList);
+// 1. Raw SQL → List<T>
+var books = await dbContext.SelectSqlQueryListAsync<BookDto>(
+    "SELECT Title, Author, Price FROM Books WHERE Tag = @tag AND Price < @limit",
+    new Dictionary<string, object>
+    {
+        ["tag"] = "Science",
+        ["limit"] = 25
+    });
 
+// 2. Stored Procedure → List<T>
+var employees = await dbContext.SelectStoredProcedureListAsync<EmployeeDto>(
+    "GetEmployeesByDepartment",
+    new Dictionary<string, object> { ["DepartmentId"] = 5 });
 
+// 3. Single row
+var book = await dbContext.SelectSqlQueryFirstOrDefaultAsync<BookDto>(
+    "SELECT TOP 1 Title, Author FROM Books WHERE Id = @id",
+    new Dictionary<string, object> { ["id"] = 42 });
+
+// 4. Streaming (IAsyncEnumerable — no buffering)
+await foreach (var row in dbContext.SelectSqlQueryStreamAsync<BookDto>(
+    "SELECT Title, Author, Price FROM Books"))
+{
+    Process(row);
+}
+
+// 5. Pre-compiled query (fastest repeated path)
+await using var compiled = dbContext.CompileSqlQuery<BookDto>(
+    "SELECT Title, Author, Price FROM Books WHERE Tag = @tag", "tag");
+
+compiled.SetParameter(0, "Science");
+var result = await compiled.ToListAsync();
 ```
 
-#### 3.**`ExecuteSqlQueryCommandAsync`**: Executes a SQL command (e.g., update, delete) asynchronously without returning any results. Useful for data manipulation operations.
+## API Reference
+
+### SQL Queries
+
+| Method | Returns | Description |
+|---|---|---|
+| `SelectSqlQueryListAsync<T>(sql, params?)` | `Task<List<T>>` | Execute query, map all rows |
+| `SelectSqlQueryFirstOrDefaultAsync<T>(sql, params?)` | `Task<T>` | Execute query, map first row |
+| `SelectSqlQueryStreamAsync<T>(sql, params?)` | `IAsyncEnumerable<T>` | Stream rows without buffering |
+| `ExecuteSqlQueryCommandAsync(sql, params?)` | `Task` | Execute non-query (INSERT/UPDATE/DELETE) |
+| `CompileSqlQuery<T>(sql, paramNames)` | `CompiledSqlQuery<T>` | Pre-compile for repeated execution |
+
+### Stored Procedures
+
+| Method | Returns | Description |
+|---|---|---|
+| `SelectStoredProcedureListAsync<T>(sp, params?)` | `Task<List<T>>` | Execute SP, map all rows |
+| `SelectStoredProcedureFirstOrDefaultAsync<T>(sp, params?)` | `Task<T>` | Execute SP, map first row |
+| `SelectStoredProcedureStreamAsync<T>(sp, params?)` | `IAsyncEnumerable<T>` | Stream SP rows without buffering |
+| `ExecuteStoredProcedureAsync(sp, params?)` | `Task` | Execute SP non-query |
+| `CompileStoredProcedure<T>(sp, paramNames)` | `CompiledSqlQuery<T>` | Pre-compile SP for repeated execution |
+
+All methods are extension methods on `DbContext`. Parameters are passed as `Dictionary<string, object>` — keys can include or omit the `@` prefix.
+
+## Supported Type Mappings
+
+| Source (SQL) | Target (.NET) | Notes |
+|---|---|---|
+| `int`, `bigint`, `smallint`, `tinyint` | `int`, `long`, `short`, `byte` | Typed getters, zero boxing |
+| `bit` | `bool` | |
+| `nvarchar`, `varchar` | `string` | Size-bucketed (4000 / MAX) |
+| `uniqueidentifier` | `Guid` | Also parses from `string` |
+| `datetime2`, `datetime` | `DateTime` | |
+| `datetimeoffset` | `DateTimeOffset` | Via `GetFieldValue<T>` |
+| `date` | `DateOnly` | Converted from `DateTime` |
+| `time` | `TimeOnly` | Converted from `TimeSpan` |
+| `decimal`, `money` | `decimal` | |
+| `float` | `double` | |
+| `real` | `float` | |
+| `varbinary` | `byte[]` | Size-bucketed (8000 / MAX) |
+| `int` / `string` | `enum` | Parsed or cast automatically |
+| Any nullable column | `T?` | `DBNull` mapped to `default` |
+
+Extra columns in the result set are ignored. Missing columns leave the DTO property at its default value.
+
+## Performance Model
+
+**First call** (per query + connection + DTO type):
+- Creates `DbCommand` with typed `SqlParameter` objects
+- Compiles an expression-tree row factory (one for `DbDataReader`, one for `SqlDataReader`)
+- Caches everything in a `ConcurrentDictionary`
+
+**Every subsequent call** (hot path):
+- Reuses cached `DbCommand` — only updates `.Value` on existing parameters (ordinal-indexed, zero string ops)
+- Skips factory lookup entirely — factory stored in the cache entry
+- Pre-sizes `List<T>` from the previous call's row count
+
+The hot path allocates only the `List<T>`, the `T` instances, and the async state machine. No reflection, no parameter creation, no dictionary lookups.
+
+## Parameters
 
 ```csharp
-await context.ExecuteSqlQueryCommandAsync(query, updateParamList);
+// Both forms work — the library normalizes automatically:
+new Dictionary<string, object> { ["tag"] = "Science" }      // without @
+new Dictionary<string, object> { ["@tag"] = "Science" }     // with @
 
-
+// Null parameters:
+new Dictionary<string, object> { ["tag"] = DBNull.Value }   // explicit DBNull
+// or simply omit the parameter dictionary for queries without parameters
 ```
 
+## Requirements
 
-#### 4.**`SelectStoredProcedureListAsync<T>`**: Executes a stored procedure asynchronously, returning the results as a list of strongly-typed objects. Suitable for stored procedures expected to return multiple rows.
+- **.NET 10.0+**
+- **Entity Framework Core 10.0+** (Relational)
+- **Microsoft.Data.SqlClient 6.0+** (for SQL Server fast-path; general `DbDataReader` path works with any provider)
 
-```csharp
-var result= await context.SelectStoredProcedureListAsync<ViewModel>(sp_name, paramList);
+## License
 
-```
-
-#### 5.**`SelectStoredProcedureFirstOrDefaultAsync<T>`**: Executes a stored procedure and maps the first result to a strongly-typed object. Used when a stored procedure is expected to return a single row.
-
-```csharp
-var result= await context.SelectStoredProcedureFirstOrDefaultAsync<ViewModel>(sp_name, paramList);
-
-
-```
-
-#### 6.**`ExecuteStoredProcedureAsync`**: Executes a stored procedure without returning any results, typically used for operations like update or delete through stored procedures.
-
-```csharp
-await context.ExecuteStoredProcedureAsync(sp_name, paramList);
-```
-
-
-## Example: Fetching Books by Tag and Price Limit
-### Scenario
-You want to retrieve a list of books that belong to a specific tag, say "Computer Science", and are priced under $20. This example shows how to execute this query using `SelectSqlQueryListAsync<T>` and map the results to a list of `BookViewModel`.
-
-```csharp
-const string sqlQuery = @" SELECT Title, Author, Price 
-			   FROM Books 
-			   WHERE Tag= @tag AND Price < @priceLimit";
-					
-// Define parameters for the tag and price limit  
-var parameters = new Dictionary<string, object> 
-{ 
-	{"tag", "Computer Science"}, 
-	{"priceLimit", 20}
-};
-
-
-// Execute the query and map the results
-var affordableComputerScienceBooks = await dbContext.SelectSqlQueryListAsync<BookViewModel>(
-    sqlQuery, parameters);
-```
-
-### Key Points to Remember
-
--   **Parameter Alignment**: Make sure the keys in your parameters dictionary match the placeholders in your SQL query exactly. For example, `"tag"` corresponds to `@tag` in the SQL query.
-    
--   **Preventing SQL Injection**: Using parameterized queries, as shown, helps prevent SQL injection by ensuring that user input or variable values cannot be used to alter the query's structure maliciously.
-    
--   **Testing Your Queries**: Always test your queries with various input values to ensure they return the expected results. This is crucial for maintaining data integrity and application reliability.
-    
--   **Simplicity and Clarity**: When writing SQL queries, aim for simplicity and clarity. Ensure that your queries are easy to read and understand, which aids in maintenance and debugging.
-
-## Contributions and Feedback
-
-Your feedback and contributions are welcome to help us improve and expand the utility. Please feel free to reach out through GitHub or LinkedIn for discussions, suggestions, or contributions.
-
-
-## 📄 License
 [MIT](https://choosealicense.com/licenses/mit/)
-    
 
-## 🔗 Connect with me:
+## Links
 
-[<img align="left" alt="GitHub" width="22px" src="https://raw.githubusercontent.com/iconic/open-iconic/master/svg/globe.svg" />][github] /karwan
-[<img align="left" alt="LinkedIn" width="22px" src="https://cdn.jsdelivr.net/npm/simple-icons@v3/icons/linkedin.svg" />][linkedin] /karwan
-
-[github]: https://github.com/karwanessmat
-[linkedin]: https://www.linkedin.com/in/karwan-othman
-
- 
-
-## Feedback 📢
-If you have any feedback, please reach out to us at karwan.essmat@gmail.com 
-  
+- [GitHub](https://github.com/karwanessmat/SqlToObjectify)
+- [NuGet](https://www.nuget.org/packages/SqlToObjectify)

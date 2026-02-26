@@ -14,7 +14,7 @@
     <Title>SqlToObjectify</Title>
     <Description>Execute raw SQL queries or stored procedures directly from your DbContext and map results to strongly-typed objects — faster and lighter than Dapper.</Description>
     <Authors>Karwan Essmat</Authors>
-    <Copyright>© 2025 Karwan Essmat</Copyright>
+    <Copyright>© 2026 Karwan Essmat</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/karwanessmat/SqlToObjectify</PackageProjectUrl>
     <RepositoryUrl>https://github.com/karwanessmat/SqlToObjectify</RepositoryUrl>
@@ -22,10 +22,16 @@
     <PackageIcon>logo.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageReleaseNotes>
+      v10.0.4
+      - PERF: SelectSqlQueryFirstOrDefaultAsync / SelectStoredProcedureFirstOrDefaultAsync now use the internal command cache (previously allocated a new DbCommand per call).
+      - PERF: Hot-path parameter updates use ordinal-indexed lookups instead of string-keyed DbParameterCollection searches — zero string allocation per call.
+      - PERF: [SkipLocalsInit] on DataReaderObjectMapper eliminates zero-initialization overhead on hot-path stack locals.
+      - PERF: [AggressiveInlining] on GetOrCreateEntry, UpdateCommandParametersFast, RowFactoryCache.GetOrAdd, and SchemaFingerprint hashing methods.
+      - FIX: Entry cache key now includes typeof(T) — same SQL with different DTO types no longer collides.
       v10.0.3
-      - PERF: SelectSqlQueryListAsync / SelectStoredProcedureListAsync now internally cache their DbCommand and RowFactory after the first call (keyed by connection + query text + CommandType). Every subsequent call for the same query reuses the pre-built command (no CreateCommand / CreateParameter), skips GetOrAdd in RowFactoryCache, and pre-sizes List&lt;T&gt; from the previous call's row count — matching the hot-path cost of CompiledSqlQuery&lt;T&gt;.ToListAsync while keeping the simple Dictionary parameter API.
-      - PERF: Hot-path parameter update (UpdateCommandParameters) only mutates .Value on already-typed SqlParameters — no type inference, no boxing for common CLR types.
-      - Previous (v10.0.4): [ThreadStatic] race-condition fix, independent SchemaFingerprint hashes, ASCII bitmask in fingerprint, IAsyncEnumerable streaming, DateTimeOffset support, adaptive List pre-sizing in CompiledSqlQuery.
+      - PERF: SelectSqlQueryListAsync / SelectStoredProcedureListAsync internally cache DbCommand + RowFactory after the first call. Hot-path cost matches CompiledSqlQuery&lt;T&gt;.ToListAsync while keeping the simple Dictionary API.
+      - PERF: Hot-path parameter update only mutates .Value on already-typed SqlParameters — no type inference, no boxing.
+      - [ThreadStatic] race-condition fix, independent SchemaFingerprint dual hashes, IAsyncEnumerable streaming, DateTimeOffset support, adaptive List pre-sizing.
     </PackageReleaseNotes>
 
     <Version>10.0.4</Version>
