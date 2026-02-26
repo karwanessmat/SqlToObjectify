@@ -3,10 +3,12 @@ using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Microsoft.Data.SqlClient;
 
 namespace SqlToObjectifyLibrary;
 
+[SkipLocalsInit]
 internal static class DataReaderObjectMapper
 {
     // Default initial capacity for result lists — avoids the first few List<T> doublings
@@ -322,6 +324,7 @@ internal static class DataReaderObjectMapper
         [ThreadStatic] private static CacheEntry? Last;
         [ThreadStatic] private static CommandEntry? LastCommand;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RowFactory GetOrAdd(DbDataReader reader, string? commandText)
         {
             // Fast-path 1: same command text + field count (reused DbCommand, same schema).
@@ -563,6 +566,7 @@ internal static class DataReaderObjectMapper
             private const ulong FnvOffsetBasis2 = 9650029242287828579UL;
             private const ulong FnvPrime = 1099511628211UL;
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static SchemaFingerprint Create(DbDataReader reader)
             {
                 var hash1 = FnvOffsetBasis1;
@@ -575,7 +579,8 @@ internal static class DataReaderObjectMapper
                     // hash1: name-then-type (position-order sensitive via sequential XOR)
                     hash1 = AddStringOrdinalIgnoreCase(hash1, name);
 
-                    var typeHandle = reader.GetFieldType(i).TypeHandle.Value.ToInt64();
+                    // Use IntPtr directly — avoids the ToInt64() call on 64-bit.
+                    var typeHandle = (long)reader.GetFieldType(i).TypeHandle.Value;
                     hash1 = AddInt64(hash1, typeHandle);
 
                     // hash2: mix in ordinal FIRST, making it independent from hash1.
@@ -589,6 +594,7 @@ internal static class DataReaderObjectMapper
                 return new SchemaFingerprint(fieldCount, hash1, hash2);
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static ulong AddStringOrdinalIgnoreCase(ulong hash, string value)
             {
                 foreach (var ch in value)
@@ -610,6 +616,7 @@ internal static class DataReaderObjectMapper
                 return hash;
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static ulong AddInt64(ulong hash, long value)
             {
                 unchecked

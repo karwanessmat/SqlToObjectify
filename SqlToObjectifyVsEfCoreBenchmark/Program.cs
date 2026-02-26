@@ -25,6 +25,11 @@ public static class Program
         var config = DefaultConfig.Instance.WithArtifactsPath(artifactsPath);
 
         Console.WriteLine($"BenchmarkDotNet artifacts: {artifactsPath}");
-        BenchmarkRunner.Run<PersonQueryBenchmarks>(config);
+
+        // Run both raw-SQL and stored-procedure benchmarks.
+        // Pass --filter *StoredProcedure* to run only SP benchmarks.
+        BenchmarkRunner.Run(
+            [typeof(PersonQueryBenchmarks), typeof(StoredProcedureBenchmarks)],
+            config);
     }
 }

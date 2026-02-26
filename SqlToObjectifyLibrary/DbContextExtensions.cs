@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Data;
 using System.Data.Common;
+using System.Runtime.CompilerServices;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,38 +21,72 @@ namespace SqlToObjectifyLibrary
         //   • reuses the already-created DbCommand (no CreateCommand / CreateParameter)
         //   • skips GetOrAdd in RowFactoryCache<T> (factory already stored)
         //   • pre-sizes List<T> from the previous call's count (_lastCount)
+        //   • updates parameter values by ordinal index (no string lookup)
         //
         // This gives SelectSqlQueryListAsync the same hot-path cost as
         // CompiledSqlQuery<T>.ToListAsync while keeping the simple dictionary API.
         // ---------------------------------------------------------------------------
-        private sealed class InternalCompiledEntry<T>(DbCommand command)
+        private sealed class InternalCompiledEntry<T>(
+            DbCommand command,
+            string[]? paramPrefixed,
+            string[]? paramUnprefixed)
         {
             public readonly DbCommand Command = command;
+            // "@name" forms — matches callers who include the prefix.
+            public readonly string[]? ParamPrefixed = paramPrefixed;
+            // "name" forms — matches callers who omit the prefix. Zero-allocation fallback.
+            public readonly string[]? ParamUnprefixed = paramUnprefixed;
             public DataReaderObjectMapper.RowFactoryCache<T>.RowFactory? Factory;
             public int LastCount;
         }
 
-        // Key: (connection object identity, sql text, command-type)
-        // Storing the connection as a weak reference would complicate the API; connections
-        // are long-lived (benchmark keeps one open for the whole run, EF Core pools them).
-        // Using the connection instance directly is safe — each DbContext has its own.
-        private static readonly ConcurrentDictionary<(DbConnection, string, CommandType), object> _entryCache = new();
+        // Key: (connection, sql text, command-type, DTO type).
+        // Including typeof(T) ensures that the same SQL with different DTOs gets separate
+        // cached commands (each DTO type needs its own RowFactory).
+        private static readonly ConcurrentDictionary<(DbConnection, string, CommandType, Type), object> _entryCache = new();
 
-        // Typed wrapper so the ConcurrentDictionary value is object (avoids generic static field issues).
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static InternalCompiledEntry<T> GetOrCreateEntry<T>(
             DbConnection connection,
             string sqlQuery,
             CommandType commandType,
             IReadOnlyDictionary<string, object>? parameters)
         {
-            var key = (connection, sqlQuery, commandType);
+            var key = (connection, sqlQuery, commandType, typeof(T));
 
             if (_entryCache.TryGetValue(key, out var existing))
                 return (InternalCompiledEntry<T>)existing;
 
+            return GetOrCreateEntrySlow<T>(key, connection, sqlQuery, commandType, parameters);
+        }
+
+        private static InternalCompiledEntry<T> GetOrCreateEntrySlow<T>(
+            (DbConnection, string, CommandType, Type) key,
+            DbConnection connection,
+            string sqlQuery,
+            CommandType commandType,
+            IReadOnlyDictionary<string, object>? parameters)
+        {
             // Build the command once with parameters pre-attached.
             var command = CreateCommand(connection, sqlQuery, commandType, parameters);
-            var entry = new InternalCompiledEntry<T>(command);
+
+            // Store both "@name" and "name" forms for zero-allocation lookups on the hot path.
+            string[]? prefixed = null;
+            string[]? unprefixed = null;
+            if (parameters is { Count: > 0 })
+            {
+                var count = command.Parameters.Count;
+                prefixed = new string[count];
+                unprefixed = new string[count];
+                for (var i = 0; i < count; i++)
+                {
+                    var pname = command.Parameters[i].ParameterName;
+                    prefixed[i] = pname;
+                    unprefixed[i] = pname.StartsWith("@", StringComparison.Ordinal) ? pname.Substring(1) : pname;
+                }
+            }
+
+            var entry = new InternalCompiledEntry<T>(command, prefixed, unprefixed);
 
             // GetOrAdd is safe: if another thread races us, we discard our command and use theirs.
             var winner = (InternalCompiledEntry<T>)_entryCache.GetOrAdd(key, entry);
@@ -76,9 +111,8 @@ namespace SqlToObjectifyLibrary
                 var connection = context.Database.GetDbConnection();
                 var entry = GetOrCreateEntry<T>(connection, sqlQuery, CommandType.Text, parameters);
 
-                // Update parameter values on the cached command for this call.
                 if (parameters is { Count: > 0 })
-                    UpdateCommandParameters(entry.Command, parameters);
+                    UpdateCommandParametersFast(entry, parameters);
 
                 List<T> result;
                 if (entry.Factory.HasValue)
@@ -101,7 +135,8 @@ namespace SqlToObjectifyLibrary
             }
 
             /// <summary>
-            /// Fetch an object based on the query
+            /// Fetch an object based on the query.
+            /// After the first call, the DbCommand and row-mapping delegate are cached.
             /// </summary>
             public async Task<T> SelectSqlQueryFirstOrDefaultAsync<T>(
                 string sqlQuery,
@@ -109,8 +144,23 @@ namespace SqlToObjectifyLibrary
                 CancellationToken cancellationToken = default)
             {
                 var connection = context.Database.GetDbConnection();
-                await using var command = CreateCommand(connection, sqlQuery, CommandType.Text, parameters);
-                return await DataReaderObjectMapper.ReadFirstOrDefaultAsync<T>(command, cancellationToken).ConfigureAwait(false);
+                var entry = GetOrCreateEntry<T>(connection, sqlQuery, CommandType.Text, parameters);
+
+                if (parameters is { Count: > 0 })
+                    UpdateCommandParametersFast(entry, parameters);
+
+                if (entry.Factory.HasValue)
+                {
+                    return await DataReaderObjectMapper.ReadFirstOrDefaultAsync(
+                        entry.Command, entry.Factory.Value, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+
+                var (result, factory) = await DataReaderObjectMapper.ReadFirstOrDefaultWithFactoryAsync<T>(
+                    entry.Command, cancellationToken)
+                    .ConfigureAwait(false);
+                entry.Factory = factory;
+                return result;
             }
 
             /// <summary>
@@ -140,7 +190,7 @@ namespace SqlToObjectifyLibrary
                 var entry = GetOrCreateEntry<T>(connection, sqlQuery, CommandType.StoredProcedure, parameters);
 
                 if (parameters is { Count: > 0 })
-                    UpdateCommandParameters(entry.Command, parameters);
+                    UpdateCommandParametersFast(entry, parameters);
 
                 List<T> result;
                 if (entry.Factory.HasValue)
@@ -163,7 +213,8 @@ namespace SqlToObjectifyLibrary
             }
 
             /// <summary>
-            /// Fetch an object based on the stored Procedure
+            /// Fetch an object based on the stored Procedure.
+            /// After the first call, the DbCommand and row-mapping delegate are cached.
             /// </summary>
             public async Task<T> SelectStoredProcedureFirstOrDefaultAsync<T>(
                 string sqlQuery,
@@ -171,8 +222,23 @@ namespace SqlToObjectifyLibrary
                 CancellationToken cancellationToken = default)
             {
                 var connection = context.Database.GetDbConnection();
-                await using var command = CreateCommand(connection, sqlQuery, CommandType.StoredProcedure, parameters);
-                return await DataReaderObjectMapper.ReadFirstOrDefaultAsync<T>(command, cancellationToken).ConfigureAwait(false);
+                var entry = GetOrCreateEntry<T>(connection, sqlQuery, CommandType.StoredProcedure, parameters);
+
+                if (parameters is { Count: > 0 })
+                    UpdateCommandParametersFast(entry, parameters);
+
+                if (entry.Factory.HasValue)
+                {
+                    return await DataReaderObjectMapper.ReadFirstOrDefaultAsync(
+                        entry.Command, entry.Factory.Value, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+
+                var (result, factory) = await DataReaderObjectMapper.ReadFirstOrDefaultWithFactoryAsync<T>(
+                    entry.Command, cancellationToken)
+                    .ConfigureAwait(false);
+                entry.Factory = factory;
+                return result;
             }
 
             /// <summary>
@@ -262,19 +328,30 @@ namespace SqlToObjectifyLibrary
             return command;
         }
 
-        // Used on every hot-path call after the first: updates only .Value on the already-typed
-        // SqlParameters — no CreateCommand, no CreateParameter, no type inference.
-        private static void UpdateCommandParameters(
-            DbCommand command,
+        // Hot-path: updates parameter values by ordinal index using the pre-stored name array.
+        // Avoids string normalization and string-keyed DbParameterCollection lookups entirely.
+        // Hot-path: updates parameter values by ordinal index using pre-stored name arrays.
+        // Zero string allocation — tries "@name" then "name" with pre-computed strings.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void UpdateCommandParametersFast<T>(
+            InternalCompiledEntry<T> entry,
             IReadOnlyDictionary<string, object> parameters)
         {
-            var dbParams = command.Parameters;
-            foreach (var (key, value) in parameters)
+            var dbParams = entry.Command.Parameters;
+            var prefixed = entry.ParamPrefixed;
+            var unprefixed = entry.ParamUnprefixed;
+            if (prefixed is null) return;
+
+            for (var i = 0; i < prefixed.Length; i++)
             {
-                var name = key.StartsWith("@", StringComparison.Ordinal) ? key : "@" + key;
-                var param = dbParams[name];
-                if (param is null)
+                // Try "@name" first (common for explicit callers), then "name" (common for
+                // callers who let the library add the prefix).  Both strings are pre-computed
+                // so this path is allocation-free.
+                if (!parameters.TryGetValue(prefixed[i], out var value) &&
+                    !parameters.TryGetValue(unprefixed![i], out value))
                     continue;
+
+                var param = dbParams[i];
 
                 // For string NVarChar parameters: keep the existing SqlDbType + Size,
                 // just update Value.  This matches what CompiledSqlQuery<T>.SetParameter(string) does.

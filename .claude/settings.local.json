@@ -6,7 +6,10 @@
       "Bash(dotnet list package --include-transitive)",
       "Bash(dotnet build SqlToObjectifyLibrary.sln -c Release)",
       "Bash(dotnet build)",
-      "Bash(dotnet build -c Release)"
+      "Bash(dotnet build -c Release)",
+      "Bash(dotnet build:*)",
+      "Bash(ls:*)",
+      "Bash(dotnet test:*)"
     ]
   }
 }

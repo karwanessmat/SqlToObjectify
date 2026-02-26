@@ -1,33 +1,29 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SqlToObjectify.Test.Models;
 
 namespace SqlToObjectify.Test;
 
-public class SqlObjectDbContext:DbContext
+public class SqlObjectDbContext : DbContext
 {
+    public SqlObjectDbContext() { }
 
-    public SqlObjectDbContext()
-        
-    {
-    }
-    public SqlObjectDbContext(DbContextOptions<SqlObjectDbContext> options) 
-        : base(options)
-    {
-    }
+    public SqlObjectDbContext(DbContextOptions<SqlObjectDbContext> options)
+        : base(options) { }
+
     public DbSet<Department> Departments { get; set; }
     public DbSet<Employee> Employees { get; set; }
     public DbSet<Position> Position { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
+        if (!optionsBuilder.IsConfigured)
+        {
+            optionsBuilder.UseSqlServer(
+                "Server=(localdb)\\MSSQLLocalDB;Database=SqlToObjectifyTestDb;Integrated Security=True;Encrypt=False;");
+        }
 
-        //const string connectionStrings = "Server=.;Database=SqlObjectDb;Integrated Security=True;Encrypt=False;";
-        const string connectionStrings = "Server=.;Database=SqlObjectDb;Integrated Security=True;Encrypt=False;";
-
-        optionsBuilder.UseSqlServer(connectionStrings);
         base.OnConfiguring(optionsBuilder);
-
     }
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -35,20 +31,18 @@ public class SqlObjectDbContext:DbContext
         builder.Entity<Department>(ConfigureDepartment);
         builder.Entity<Employee>(ConfigureEmployee);
 
-
-        // Seeding departments
+        // Seed departments
         var departments = new List<Department>
         {
-            new() { Id = 1, Name = "Department1" },
-            new() { Id = 2, Name = "Department2" },
-            new() { Id = 3, Name = "Department3" },
-            new() { Id = 4, Name = "Department4" },
-            new() { Id = 5, Name = "Department5" }
+            new() { Id = 1, Name = "Engineering" },
+            new() { Id = 2, Name = "Marketing" },
+            new() { Id = 3, Name = "Sales" },
+            new() { Id = 4, Name = "HR" },
+            new() { Id = 5, Name = "Finance" }
         };
         builder.Entity<Department>().HasData(departments);
 
-
-        // Seeding employees
+        // Seed employees
         var employees = new List<Employee>();
         for (var i = 1; i <= 30; i++)
         {
@@ -59,11 +53,10 @@ public class SqlObjectDbContext:DbContext
                 DepartmentId = (i % 5) + 1
             });
         }
+
         builder.Entity<Employee>().HasData(employees);
         base.OnModelCreating(builder);
-
     }
-
 
     private static void ConfigureDepartment(EntityTypeBuilder<Department> builder)
     {
@@ -75,24 +68,9 @@ public class SqlObjectDbContext:DbContext
     {
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Name).IsRequired().HasMaxLength(100);
-
         builder.HasOne(e => e.Department)
             .WithMany()
             .HasForeignKey(e => e.DepartmentId)
             .OnDelete(DeleteBehavior.Cascade);
-    }
-}
-
-
-public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<SqlObjectDbContext>
-{
-    public SqlObjectDbContext CreateDbContext(string[] args)
-    {
-
-        var builder = new DbContextOptionsBuilder<SqlObjectDbContext>();
-
-        const string connectionStrings = "Server=.;Database=SqlObjectDb;Integrated Security=True;Encrypt=False;";
-        builder.UseSqlServer(connectionStrings);
-        return new SqlObjectDbContext(builder.Options);
     }
 }
