@@ -1,9 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using SqlToObjectify.Models;
+using SqlToObjectify.Test.Models;
 
-namespace SqlToObjectify;
+namespace SqlToObjectify.Test;
 
 public class SqlObjectDbContext:DbContext
 {

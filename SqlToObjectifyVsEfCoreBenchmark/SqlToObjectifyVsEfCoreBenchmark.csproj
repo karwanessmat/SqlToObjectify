@@ -22,10 +22,9 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="10.0.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.3" />
 
-    <!--<PackageReference Include="SqlToObjectify" Version="10.0.2-local.16" />-->
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\\SqlToObjectify\\SqlToObjectifyLibrary\\SqlToObjectifyLibrary\\SqlToObjectify\\SqlToObjectify.csproj" />
+    <ProjectReference Include="..\\SqlToObjectifyLibrary\\SqlToObjectifyLibrary.csproj" />
   </ItemGroup>
 </Project>

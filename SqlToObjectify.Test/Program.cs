@@ -1,7 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using SqlToObjectify;
-using SqlToObjectify.ViewModels;
+﻿using SqlToObjectify.Test;
 
 //var bookifyHelper = new BookifyDbContextHelper();
 

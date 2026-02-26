@@ -1,10 +1,10 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Data.SqlClient;
 using System.Collections.Concurrent;
 using System.Data;
 using System.Data.Common;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 
-namespace SqlToObjectify
+namespace SqlToObjectifyLibrary
 {
     public static class DbContextExtensions
     {
@@ -24,16 +24,11 @@ namespace SqlToObjectify
         // This gives SelectSqlQueryListAsync the same hot-path cost as
         // CompiledSqlQuery<T>.ToListAsync while keeping the simple dictionary API.
         // ---------------------------------------------------------------------------
-        private sealed class InternalCompiledEntry<T>
+        private sealed class InternalCompiledEntry<T>(DbCommand command)
         {
-            public readonly DbCommand Command;
+            public readonly DbCommand Command = command;
             public DataReaderObjectMapper.RowFactoryCache<T>.RowFactory? Factory;
             public int LastCount;
-
-            public InternalCompiledEntry(DbCommand command)
-            {
-                Command = command;
-            }
         }
 
         // Key: (connection object identity, sql text, command-type)

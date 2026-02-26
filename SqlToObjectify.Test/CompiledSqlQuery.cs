@@ -2,7 +2,7 @@ using System.Data;
 using System.Data.Common;
 using Microsoft.Data.SqlClient;
 
-namespace SqlToObjectify;
+namespace SqlToObjectify.Test;
 
 /// <summary>
 /// A pre-compiled SQL query that reuses a single <see cref="DbCommand"/> and caches the

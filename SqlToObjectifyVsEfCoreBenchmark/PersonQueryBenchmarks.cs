@@ -3,7 +3,7 @@ using BenchmarkDotNet.Attributes;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using SqlToObjectify;
+using SqlToObjectifyLibrary;
 
 namespace SqlToObjectifyVsEfCoreBenchmark;
 

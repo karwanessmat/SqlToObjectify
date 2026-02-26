@@ -1,10 +1,10 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Data.SqlClient;
 using System.Collections.Concurrent;
 using System.Data;
 using System.Data.Common;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 
-namespace SqlToObjectify
+namespace SqlToObjectify.Test
 {
     public static class DbContextExtensions
     {

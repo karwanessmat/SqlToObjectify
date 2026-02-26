@@ -5,7 +5,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.Data.SqlClient;
 
-namespace SqlToObjectify;
+namespace SqlToObjectifyLibrary;
 
 internal static class DataReaderObjectMapper
 {
