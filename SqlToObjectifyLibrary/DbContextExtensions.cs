@@ -137,8 +137,9 @@ namespace SqlToObjectifyLibrary
             /// <summary>
             /// Fetch an object based on the query.
             /// After the first call, the DbCommand and row-mapping delegate are cached.
+            /// Returns <see langword="null"/> when the query returns no rows.
             /// </summary>
-            public async Task<T> SelectSqlQueryFirstOrDefaultAsync<T>(
+            public async Task<T?> SelectSqlQueryFirstOrDefaultAsync<T>(
                 string sqlQuery,
                 Dictionary<string, object>? parameters = null,
                 CancellationToken cancellationToken = default)
@@ -215,8 +216,9 @@ namespace SqlToObjectifyLibrary
             /// <summary>
             /// Fetch an object based on the stored Procedure.
             /// After the first call, the DbCommand and row-mapping delegate are cached.
+            /// Returns <see langword="null"/> when the stored procedure returns no rows.
             /// </summary>
-            public async Task<T> SelectStoredProcedureFirstOrDefaultAsync<T>(
+            public async Task<T?> SelectStoredProcedureFirstOrDefaultAsync<T>(
                 string sqlQuery,
                 Dictionary<string, object>? parameters = null,
                 CancellationToken cancellationToken = default)

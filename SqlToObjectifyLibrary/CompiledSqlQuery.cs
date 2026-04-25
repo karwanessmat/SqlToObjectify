@@ -322,7 +322,7 @@ public sealed class CompiledSqlQuery<T> : IAsyncDisposable, IDisposable
         return result;
     }
 
-    public async Task<T> FirstOrDefaultAsync(CancellationToken cancellationToken = default)
+    public async Task<T?> FirstOrDefaultAsync(CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
 

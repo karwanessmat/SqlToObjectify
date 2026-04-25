@@ -54,8 +54,8 @@
       (EF Core 10 no longer transitively exposes it).
       EFCore.Design, EFCore.Tools, and EFCore.SqlServer are app-level concerns, not library concerns.
     -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.3" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.1" />
   </ItemGroup>
 
 

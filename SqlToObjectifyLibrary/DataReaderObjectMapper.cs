@@ -73,7 +73,7 @@ internal static class DataReaderObjectMapper
     }
 
     // Called by CompiledSqlQuery<T> on first execution for single-row queries.
-    public static async Task<(T Result, RowFactoryCache<T>.RowFactory Factory)> ReadFirstOrDefaultWithFactoryAsync<T>(
+    public static async Task<(T? Result, RowFactoryCache<T>.RowFactory Factory)> ReadFirstOrDefaultWithFactoryAsync<T>(
         DbCommand command,
         CancellationToken cancellationToken)
     {
@@ -90,26 +90,26 @@ internal static class DataReaderObjectMapper
                 cancellationToken).ConfigureAwait(false);
 
             var factory = RowFactoryCache<T>.GetOrAdd(reader, command.CommandText);
-            T result;
+            T? result;
 
             if (!cancellationToken.CanBeCanceled)
             {
                 if (reader is SqlDataReader sqlReader && factory.Sql is { } sqlFactory)
-                    result = sqlReader.Read() ? sqlFactory(sqlReader) : default!;
+                    result = sqlReader.Read() ? sqlFactory(sqlReader) : default;
                 else
                 {
                     var gen = factory.General;
-                    result = reader.Read() ? gen(reader) : default!;
+                    result = reader.Read() ? gen(reader) : default;
                 }
             }
             else
             {
                 if (reader is SqlDataReader sqlReader2 && factory.Sql is { } sqlFactory2)
-                    result = await sqlReader2.ReadAsync(cancellationToken).ConfigureAwait(false) ? sqlFactory2(sqlReader2) : default!;
+                    result = await sqlReader2.ReadAsync(cancellationToken).ConfigureAwait(false) ? sqlFactory2(sqlReader2) : default;
                 else
                 {
                     var gen = factory.General;
-                    result = await reader.ReadAsync(cancellationToken).ConfigureAwait(false) ? gen(reader) : default!;
+                    result = await reader.ReadAsync(cancellationToken).ConfigureAwait(false) ? gen(reader) : default;
                 }
             }
 
@@ -150,7 +150,7 @@ internal static class DataReaderObjectMapper
         }
     }
 
-    public static async Task<T> ReadFirstOrDefaultAsync<T>(DbCommand command, CancellationToken cancellationToken)
+    public static async Task<T?> ReadFirstOrDefaultAsync<T>(DbCommand command, CancellationToken cancellationToken)
     {
         var connection = command.Connection ?? throw new InvalidOperationException("DbCommand.Connection is null.");
         var shouldClose = connection.State != ConnectionState.Open;
@@ -168,17 +168,17 @@ internal static class DataReaderObjectMapper
             if (!cancellationToken.CanBeCanceled)
             {
                 if (reader is SqlDataReader sqlReader && factory.Sql is { } sqlFactory)
-                    return sqlReader.Read() ? sqlFactory(sqlReader) : default!;
+                    return sqlReader.Read() ? sqlFactory(sqlReader) : default;
 
                 var generalFactory = factory.General;
-                return reader.Read() ? generalFactory(reader) : default!;
+                return reader.Read() ? generalFactory(reader) : default;
             }
 
             if (reader is SqlDataReader sqlReader2 && factory.Sql is { } sqlFactory2)
-                return await sqlReader2.ReadAsync(cancellationToken).ConfigureAwait(false) ? sqlFactory2(sqlReader2) : default!;
+                return await sqlReader2.ReadAsync(cancellationToken).ConfigureAwait(false) ? sqlFactory2(sqlReader2) : default;
 
             var generalFactory2 = factory.General;
-            return await reader.ReadAsync(cancellationToken).ConfigureAwait(false) ? generalFactory2(reader) : default!;
+            return await reader.ReadAsync(cancellationToken).ConfigureAwait(false) ? generalFactory2(reader) : default;
         }
         finally
         {
@@ -188,7 +188,7 @@ internal static class DataReaderObjectMapper
     }
 
     // Called by CompiledSqlQuery<T> when it already has a cached factory.
-    public static async Task<T> ReadFirstOrDefaultAsync<T>(
+    public static async Task<T?> ReadFirstOrDefaultAsync<T>(
         DbCommand command,
         RowFactoryCache<T>.RowFactory factory,
         CancellationToken cancellationToken)
@@ -208,17 +208,17 @@ internal static class DataReaderObjectMapper
             if (!cancellationToken.CanBeCanceled)
             {
                 if (reader is SqlDataReader sqlReader && factory.Sql is { } sqlFactory)
-                    return sqlReader.Read() ? sqlFactory(sqlReader) : default!;
+                    return sqlReader.Read() ? sqlFactory(sqlReader) : default;
 
                 var generalFactory = factory.General;
-                return reader.Read() ? generalFactory(reader) : default!;
+                return reader.Read() ? generalFactory(reader) : default;
             }
 
             if (reader is SqlDataReader sqlReader2 && factory.Sql is { } sqlFactory2)
-                return await sqlReader2.ReadAsync(cancellationToken).ConfigureAwait(false) ? sqlFactory2(sqlReader2) : default!;
+                return await sqlReader2.ReadAsync(cancellationToken).ConfigureAwait(false) ? sqlFactory2(sqlReader2) : default;
 
             var generalFactory2 = factory.General;
-            return await reader.ReadAsync(cancellationToken).ConfigureAwait(false) ? generalFactory2(reader) : default!;
+            return await reader.ReadAsync(cancellationToken).ConfigureAwait(false) ? generalFactory2(reader) : default;
         }
         finally
         {
